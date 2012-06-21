@@ -134,12 +134,27 @@ status_t Loader::driver_t::set(void* hnd, int32_t api)
     return NO_ERROR;
 }
 
+#ifdef OMAP_ENHANCEMENT_MULTIGPU
+int Loader::checkProcessorType(void)
+{
+    char prop[PROPERTY_VALUE_MAX];
+    int result = property_get("ro.product.processor",prop,NULL);
+    if (result) {
+        mProcessorType = prop;
+        ALOGI("Processor type: %s",prop);
+    } else
+        ALOGI("Processor type unknown");
+    return result;
+}
+#endif
+
 // ----------------------------------------------------------------------------
 
 Loader::Loader()
 {
     char line[256];
     char tag[256];
+    int ret = 0;
 
     /* Special case for GLES emulation */
     if (checkGlesEmulationStatus() == 0) {
@@ -148,6 +163,10 @@ Loader::Loader()
         mDriverTag.setTo("android");
         return;
     }
+#ifdef OMAP_ENHANCEMENT_MULTIGPU
+    int processor = checkProcessorType();
+    char proctype[256] = "";
+#endif
 
     /* Otherwise, use egl.cfg */
     FILE* cfg = fopen("/system/lib/egl/egl.cfg", "r");
@@ -158,6 +177,7 @@ Loader::Loader()
     } else {
         while (fgets(line, 256, cfg)) {
             int dpy, impl;
+#ifndef OMAP_ENHANCEMENT_MULTIGPU
             if (sscanf(line, "%u %u %s", &dpy, &impl, tag) == 3) {
                 //ALOGD(">>> %u %u %s", dpy, impl, tag);
                 // We only load the h/w accelerated implementation
@@ -165,6 +185,29 @@ Loader::Loader()
                     mDriverTag = tag;
                 }
             }
+#else
+            if ( (ret = sscanf(line, "%u %u %s %s", &dpy, &impl, tag, proctype)) == 4) {
+                // We only load the h/w accelerated implementation
+                ALOGI("egl.cfg: entry %s %s", tag, !strlen(proctype) ? "" : proctype);
+                if (tag != String8("android")) {
+                    if (processor) {
+                        if (String8(proctype) == mProcessorType) {
+                            mDriverTag = tag;
+                            ALOGI("Picked EGL type '%s' for processor '%s'", tag, proctype);
+                            break;
+                        }
+                    } else {
+                        mDriverTag = tag;
+                        ALOGI("Picked EGL type '%s' without known processor type", tag);
+                        break;
+                    }
+                }
+            } else if (ret == 3) { // If line have the only 3 arg, process it in default style
+                if (tag != String8("android")) {
+                    mDriverTag = tag;
+                }
+            }
+#endif
         }
         fclose(cfg);
     }
