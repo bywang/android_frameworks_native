@@ -82,6 +82,7 @@ include $(BUILD_HOST_STATIC_LIBRARY)
 
 # For the host, 64-bit
 # =====================================================
+ifeq ($(HOST_BITS),64)
 include $(CLEAR_VARS)
 LOCAL_SRC_FILES:= $(commonSources)
 ifeq ($(HOST_OS), linux)
@@ -94,6 +95,7 @@ LOCAL_C_INCLUDES := \
 LOCAL_CFLAGS += $(host_commonCflags) -m64
 LOCAL_LDLIBS += $(host_commonLdlibs)
 include $(BUILD_HOST_STATIC_LIBRARY)
+endif
 
 
 # For the device
