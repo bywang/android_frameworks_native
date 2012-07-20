@@ -804,6 +804,13 @@ status_t BufferQueue::acquireBuffer(BufferItem *buffer) {
     ATRACE_CALL();
     Mutex::Autolock _l(mMutex);
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    if (mAbandoned) {
+        ST_LOGE("acquireBuffer: SurfaceTexture has been abandoned!");
+        return NO_INIT;
+    }
+#endif
+
     // Check that the consumer doesn't currently have the maximum number of
     // buffers acquired.  We allow the max buffer count to be exceeded by one
     // buffer, so that the consumer can successfully set up the newly acquired
@@ -1072,5 +1079,17 @@ void BufferQueue::ProxyConsumerListener::onBuffersReleased() {
         listener->onBuffersReleased();
     }
 }
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+status_t BufferQueue::updateAndGetCurrent(sp<GraphicBuffer>* buf) {
+    ST_LOGV("updateAndGetCurrent");
+    BufferItem item;
+    status_t status = acquireBuffer(&item);
+    if (status != NO_BUFFER_AVAILABLE) {
+        *buf = mSlots[item.mBuf].mGraphicBuffer;
+    }
+    return status;
+}
+#endif
 
 }; // namespace android

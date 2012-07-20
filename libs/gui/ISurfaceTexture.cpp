@@ -40,6 +40,9 @@ enum {
     SET_SYNCHRONOUS_MODE,
     CONNECT,
     DISCONNECT,
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    UPDATE_AND_GET_CURRENT,
+#endif
 };
 
 
@@ -180,6 +183,24 @@ public:
         result = reply.readInt32();
         return result;
     }
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        status_t result = remote()->transact(UPDATE_AND_GET_CURRENT, data, &reply);
+        if (result != NO_ERROR) {
+            return result;
+        }
+        bool nonNull = reply.readInt32();
+        if (nonNull) {
+            *buf = new GraphicBuffer();
+            reply.read(**buf);
+        }
+        result = reply.readInt32();
+        return result;
+    }
+#endif
 };
 
 IMPLEMENT_META_INTERFACE(SurfaceTexture, "android.gui.SurfaceTexture");
@@ -283,6 +304,20 @@ status_t BnSurfaceTexture::onTransact(
             reply->writeInt32(res);
             return NO_ERROR;
         } break;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        case UPDATE_AND_GET_CURRENT: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            sp<GraphicBuffer> buffer;
+            int result = updateAndGetCurrent(&buffer);
+            reply->writeInt32(buffer != 0);
+            if (buffer != 0) {
+                reply->write(*buffer);
+            }
+            reply->writeInt32(result);
+            return NO_ERROR;
+        } break;
+#endif
     }
     return BBinder::onTransact(code, data, reply, flags);
 }

@@ -185,6 +185,12 @@ public:
     // This method will fail if the the SurfaceTexture is not currently
     // connected to the specified client API.
     virtual status_t disconnect(int api) = 0;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    // updateAndGetCurrent gets the latest buffer and gives the ownership
+    // of the buffer to the client
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf) = 0;
+#endif
 };
 
 // ----------------------------------------------------------------------------
