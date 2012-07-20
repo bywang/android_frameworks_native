@@ -29,6 +29,10 @@
 #include <ui/GraphicBuffer.h>
 #include <ui/Rect.h>
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+#include <binder/IMemory.h>
+#endif
+
 namespace android {
 // ----------------------------------------------------------------------------
 
@@ -145,8 +149,14 @@ public:
         uint32_t numPendingBuffers;
     };
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t queueBuffer(int slot,
+            const QueueBufferInput& input, QueueBufferOutput* output,
+            const sp<IMemory>& metadata) = 0;
+#else
     virtual status_t queueBuffer(int slot,
             const QueueBufferInput& input, QueueBufferOutput* output) = 0;
+#endif
 
     // cancelBuffer indicates that the client does not wish to fill in the
     // buffer associated with slot and transfers ownership of the slot back to

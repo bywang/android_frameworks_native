@@ -107,12 +107,21 @@ public:
         return result;
     }
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t queueBuffer(int buf,
+            const QueueBufferInput& input, QueueBufferOutput* output,
+            const sp<IMemory>& metadata) {
+#else
     virtual status_t queueBuffer(int buf,
             const QueueBufferInput& input, QueueBufferOutput* output) {
+#endif
         Parcel data, reply;
         data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
         data.writeInt32(buf);
         data.write(input);
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        data.writeStrongBinder(metadata->asBinder());
+#endif
         status_t result = remote()->transact(QUEUE_BUFFER, data, &reply);
         if (result != NO_ERROR) {
             return result;
@@ -255,7 +264,12 @@ status_t BnSurfaceTexture::onTransact(
             QueueBufferOutput* const output =
                     reinterpret_cast<QueueBufferOutput *>(
                             reply->writeInplace(sizeof(QueueBufferOutput)));
+#ifdef OMAP_ENHANCEMENT_CPCAM
+            sp<IMemory> metadata = interface_cast<IMemory>(data.readStrongBinder());
+            status_t result = queueBuffer(buf, input, output, metadata);
+#else
             status_t result = queueBuffer(buf, input, output);
+#endif
             reply->writeInt32(result);
             return NO_ERROR;
         } break;

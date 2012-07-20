@@ -136,8 +136,14 @@ public:
     // nanoseconds, and must be monotonically increasing. Its other semantics
     // (zero point, etc) are client-dependent and should be documented by the
     // client.
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t queueBuffer(int buf,
+            const QueueBufferInput& input, QueueBufferOutput* output,
+            const sp<IMemory>& metadata = 0);
+#else
     virtual status_t queueBuffer(int buf,
             const QueueBufferInput& input, QueueBufferOutput* output);
+#endif
 
     virtual void cancelBuffer(int buf, sp<Fence> fence);
 
@@ -207,6 +213,12 @@ public:
 
         // mFence is a fence that will signal when the buffer is idle.
         sp<Fence> mFence;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        // mMetadata is a shared memory containing camera_metadata_t for this
+        // slot. Content of metadata may be different dependeing on usecase.
+        sp<IMemory> mMetadata;
+#endif
     };
 
     // The following public functions is the consumer facing interface
@@ -438,6 +450,12 @@ private:
 
         // Indicates whether this buffer needs to be cleaned up by consumer
         bool mNeedsCleanupOnRelease;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        // mMetadata is a shared memory containing camera_metadata_t for this
+        // slot. Content of metadata may be different dependeing on usecase.
+        sp<IMemory> mMetadata;
+#endif
     };
 
     // mSlots is the array of buffer slots that must be mirrored on the client
