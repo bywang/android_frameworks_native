@@ -200,6 +200,9 @@ public:
     // updateAndGetCurrent gets the latest buffer and gives the ownership
     // of the buffer to the client
     virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf) = 0;
+
+    // addBufferSlot() adds the provided buffer to the buffer slots array.
+    virtual int addBufferSlot(const sp<GraphicBuffer>& buffer) = 0;
 #endif
 };
 

@@ -1102,6 +1102,25 @@ status_t BufferQueue::updateAndGetCurrent(sp<GraphicBuffer>* buf) {
     }
     return status;
 }
+
+
+int BufferQueue::addBufferSlot(const sp<GraphicBuffer>& buffer) {
+    Mutex::Autolock lock(mMutex);
+
+    // Find first free slot to add buffer
+    const int maxBufferCount = getMaxBufferCountLocked();
+    for (int i = 0; i < maxBufferCount; i++) {
+        if ((mSlots[i].mGraphicBuffer == NULL) &&
+                (mSlots[i].mBufferState == BufferSlot::FREE)) {
+            // add buffer is dequeued state since client still has ownership of it
+            mSlots[i].mBufferState = BufferSlot::DEQUEUED;
+            mSlots[i].mRequestBufferCalled = true;
+            mSlots[i].mGraphicBuffer = buffer;
+            return i;
+        }
+    }
+    return -1;
+}
 #endif
 
 }; // namespace android

@@ -560,6 +560,9 @@ private:
 public:
     // updateAndGetCurrent() updates to the current buffer and returns.
     virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf);
+
+    // addBufferSlot() adds the provided buffer to the buffer slots array.
+    virtual int addBufferSlot(const sp<GraphicBuffer>& buffer);
 #endif
 };
 

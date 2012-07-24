@@ -428,6 +428,9 @@ int SurfaceTextureClient::perform(int operation, va_list args)
     case NATIVE_WINDOW_UPDATE_AND_GET_CURRENT:
         res = dispatchUpdateAndGetCurrent(args);
         break;
+    case NATIVE_WINDOW_ADD_BUFFER_SLOT:
+        res = dispatchAddBufferSlot(args);
+        break;
 #endif
     default:
         res = NAME_NOT_FOUND;
@@ -525,6 +528,11 @@ int SurfaceTextureClient::dispatchUnlockAndPost(va_list args) {
 int SurfaceTextureClient::dispatchUpdateAndGetCurrent(va_list args) {
     ANativeWindowBuffer** buffer = va_arg(args, ANativeWindowBuffer**);
     return updateAndGetCurrent(buffer);
+}
+
+int SurfaceTextureClient::dispatchAddBufferSlot(va_list args) {
+    const sp<GraphicBuffer> *buffer = va_arg(args, sp<GraphicBuffer> *);
+    return addBufferSlot(*buffer);
 }
 #endif
 
@@ -895,6 +903,27 @@ int SurfaceTextureClient::setBuffersMetadata(const sp<MemoryBase>& metadata)
     ALOGV("SurfaceTextureClient::setBuffersMetadata");
     Mutex::Autolock lock(mMutex);
     mMetadata = metadata;
+    return NO_ERROR;
+}
+
+int SurfaceTextureClient::addBufferSlot(const sp<GraphicBuffer>& buffer)
+{
+    ALOGV("SurfaceTextureClient::addBufferSlot");
+    int slot = -1;
+
+    Mutex::Autolock lock(mMutex);
+    slot = mSurfaceTexture->addBufferSlot(buffer);
+
+    if (0 > slot) {
+        return NO_MEMORY;
+    }
+    if (NUM_BUFFER_SLOTS <= slot) {
+        return BAD_INDEX;
+    }
+
+    mSlots[slot].buffer = buffer;
+    mSlots[slot].dirtyRegion.clear();
+
     return NO_ERROR;
 }
 #endif
