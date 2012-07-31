@@ -563,6 +563,10 @@ public:
 
     // addBufferSlot() adds the provided buffer to the buffer slots array.
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer);
+
+    // getBuffer() allows consumer to get a BufferItem for particular
+    // slot without getting a reference to it.
+    status_t getBuffer(int slot, BufferItem *buffer);
 #endif
 };
 

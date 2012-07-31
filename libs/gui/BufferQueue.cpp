@@ -1121,6 +1121,37 @@ int BufferQueue::addBufferSlot(const sp<GraphicBuffer>& buffer) {
     }
     return -1;
 }
+
+status_t BufferQueue::getBuffer(int slot, BufferItem *buffer) {
+    ATRACE_CALL();
+    Mutex::Autolock _l(mMutex);
+
+    const int maxBufferCount = getMaxBufferCountLocked();
+    if (slot < 0 || slot >= maxBufferCount) {
+        ALOGE("Invalid slot index");
+        return BAD_VALUE;
+    }
+
+    ATRACE_BUFFER_INDEX(slot);
+
+    if (mSlots[slot].mAcquireCalled) {
+        buffer->mGraphicBuffer = mSlots[slot].mGraphicBuffer;
+    } else {
+        buffer->mGraphicBuffer = NULL;
+    }
+
+    buffer->mCrop = mSlots[slot].mCrop;
+    buffer->mTransform = mSlots[slot].mTransform;
+    buffer->mScalingMode = mSlots[slot].mScalingMode;
+    buffer->mFrameNumber = mSlots[slot].mFrameNumber;
+    buffer->mTimestamp = mSlots[slot].mTimestamp;
+    buffer->mMetadata = mSlots[slot].mMetadata;
+
+    buffer->mBuf = slot;
+
+    return OK;
+
+}
 #endif
 
 }; // namespace android
