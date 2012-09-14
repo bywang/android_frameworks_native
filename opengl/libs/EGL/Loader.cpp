@@ -138,12 +138,24 @@ status_t Loader::driver_t::set(void* hnd, int32_t api)
 int Loader::checkProcessorType(void)
 {
     char prop[PROPERTY_VALUE_MAX];
-    int result = property_get("ro.product.processor",prop,NULL);
+    int result, i;
+    int retry = 10;
+
+    /* Block here until pvrsrvinit has set ro.product.processor. */
+    for(i = retry; i > 0; i--) {
+        result = property_get("ro.product.processor",prop,NULL);
+        if(result)
+            break;
+
+        usleep(10*1000);
+    }
+
     if (result) {
         mProcessorType = prop;
         ALOGI("Processor type: %s",prop);
     } else
-        ALOGI("Processor type unknown");
+        ALOGI("Processor type unknown, expect problems");
+
     return result;
 }
 #endif
