@@ -557,6 +557,9 @@ private:
     uint32_t mTransformHint;
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
+    // mId is an unique string to identify each particular BufferQueue instance.
+    String8 mId;
+
 public:
     // updateAndGetCurrent() updates to the current buffer and returns.
     virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf);
@@ -567,6 +570,9 @@ public:
     // getBuffer() allows consumer to get a BufferItem for particular
     // slot without getting a reference to it.
     status_t getBuffer(int slot, BufferItem *buffer);
+
+    // gets a process unique id for the BufferQueue
+    String8 getId() const;
 #endif
 };
 

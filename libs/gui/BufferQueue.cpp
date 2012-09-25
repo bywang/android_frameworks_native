@@ -82,7 +82,14 @@ BufferQueue::BufferQueue(bool allowSynchronousMode,
     mTransformHint(0)
 {
     // Choose a name using the PID and a process-unique ID.
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    int bqPid = getpid();
+    int bqUniqueId = createProcessUniqueId();
+    mConsumerName = String8::format("unnamed-%d-%d", bqPid, bqUniqueId);
+    mId = String8::format("bq-%d-%d", bqPid, bqUniqueId);
+#else
     mConsumerName = String8::format("unnamed-%d-%d", getpid(), createProcessUniqueId());
+#endif
 
     ST_LOGV("BufferQueue");
     if (allocator == NULL) {
@@ -1152,6 +1159,12 @@ status_t BufferQueue::getBuffer(int slot, BufferItem *buffer) {
     return OK;
 
 }
+
+String8 BufferQueue::getId() const {
+    Mutex::Autolock _l(mMutex);
+    return mId;
+}
+
 #endif
 
 }; // namespace android

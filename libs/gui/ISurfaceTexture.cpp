@@ -43,6 +43,7 @@ enum {
 #ifdef OMAP_ENHANCEMENT_CPCAM
     UPDATE_AND_GET_CURRENT,
     ADD_BUFFER_SLOT,
+    GET_ID,
 #endif
 };
 
@@ -222,6 +223,14 @@ public:
         int bufferIndex = reply.readInt32();
         return bufferIndex;
     }
+
+    virtual String8 getId() const {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        status_t result =remote()->transact(GET_ID, data, &reply);
+        String8 id = reply.readString8();
+        return id;
+    }
 #endif
 };
 
@@ -350,6 +359,12 @@ status_t BnSurfaceTexture::onTransact(
             data.read(*buffer);
             int bufferIndex = addBufferSlot(buffer);
             reply->writeInt32(bufferIndex);
+            return NO_ERROR;
+        } break;
+       case GET_ID: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            String8 result = getId();
+            reply->writeString8(result);
             return NO_ERROR;
         } break;
 #endif

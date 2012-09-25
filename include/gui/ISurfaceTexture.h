@@ -31,6 +31,7 @@
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
 #include <binder/IMemory.h>
+#include <utils/String8.h>
 #endif
 
 namespace android {
@@ -203,6 +204,13 @@ public:
 
     // addBufferSlot() adds the provided buffer to the buffer slots array.
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer) = 0;
+
+public:
+    // gets a process unique id for the SurfaceTexture
+    // if id is not already created, the id will be created here
+    virtual String8 getId() const {
+        return getId();
+    }
 #endif
 };
 

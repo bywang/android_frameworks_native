@@ -103,6 +103,7 @@ private:
     int dispatchUpdateAndGetCurrent(va_list args);
     int dispatchSetBuffersMetadata(va_list args);
     int dispatchAddBufferSlot(va_list args);
+    int dispatchGetId(va_list args);
 #endif
 
 protected:
@@ -132,6 +133,7 @@ protected:
     virtual int updateAndGetCurrent(ANativeWindowBuffer** buffer);
     virtual int setBuffersMetadata(const sp<MemoryBase>& metadata);
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer);
+    String8 getId() const;
 #endif
 
     enum { NUM_BUFFER_SLOTS = BufferQueue::NUM_BUFFER_SLOTS };
