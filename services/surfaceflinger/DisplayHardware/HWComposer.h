@@ -273,7 +273,10 @@ private:
             int64_t timestamp);
     static void hook_hotplug(const struct hwc_procs* procs, int disp,
             int connected);
-
+#ifdef OMAP_ENHANCEMENT
+    static int hook_extension_cb(struct hwc_procs* procs, int operation,
+            void** data, int size);
+#endif
     inline void invalidate();
     inline void vsync(int disp, int64_t timestamp);
     inline void hotplug(int disp, int connected);

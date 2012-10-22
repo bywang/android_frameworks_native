@@ -141,6 +141,9 @@ HWComposer::HWComposer(
             mCBContext->hwc = this;
             mCBContext->procs.invalidate = &hook_invalidate;
             mCBContext->procs.vsync = &hook_vsync;
+#ifdef OMAP_ENHANCEMENT
+            mCBContext->procs.extension_cb = &hook_extension_cb;
+#endif
             if (hwcHasApiVersion(mHwc, HWC_DEVICE_API_VERSION_1_1))
                 mCBContext->procs.hotplug = &hook_hotplug;
             else
@@ -284,6 +287,13 @@ void HWComposer::hook_hotplug(const struct hwc_procs* procs, int disp,
             const_cast<hwc_procs_t*>(procs));
     ctx->hwc->hotplug(disp, connected);
 }
+
+#ifdef OMAP_ENHANCEMENT
+int HWComposer::hook_extension_cb(struct hwc_procs* procs, int operation,
+        void** data, int size) {
+    return 0;
+}
+#endif
 
 void HWComposer::invalidate() {
     mFlinger->repaintEverything();
@@ -521,6 +531,9 @@ status_t HWComposer::createWorkList(int32_t id, size_t numLayers) {
         }
         disp.list->retireFenceFd = -1;
         disp.list->flags = HWC_GEOMETRY_CHANGED;
+#ifdef OMAP_ENHANCEMENT
+        disp.list->flags |= HWC_EXTENDED_API;
+#endif
         disp.list->numHwLayers = numLayers;
     }
     return NO_ERROR;
