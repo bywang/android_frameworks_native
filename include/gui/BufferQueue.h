@@ -562,10 +562,13 @@ private:
 
 public:
     // updateAndGetCurrent() updates to the current buffer and returns.
-    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf);
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot);
 
     // addBufferSlot() adds the provided buffer to the buffer slots array.
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer);
+
+    // releaseBuffer() release the given buffer slot.
+    virtual status_t releaseBuffer(int slot);
 
     // getBuffer() allows consumer to get a BufferItem for particular
     // slot without getting a reference to it.

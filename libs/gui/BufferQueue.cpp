@@ -1105,16 +1105,28 @@ void BufferQueue::ProxyConsumerListener::onBuffersReleased() {
 }
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
-status_t BufferQueue::updateAndGetCurrent(sp<GraphicBuffer>* buf) {
+status_t BufferQueue::updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) {
     ST_LOGV("updateAndGetCurrent");
     BufferItem item;
     status_t status = acquireBuffer(&item);
     if (status != NO_BUFFER_AVAILABLE) {
         *buf = mSlots[item.mBuf].mGraphicBuffer;
+        slot = item.mBuf;
     }
     return status;
 }
 
+status_t BufferQueue::releaseBuffer(int slot) {
+    ST_LOGV("releaseBuffer");
+
+    const int maxBufferCount = getMaxBufferCountLocked();
+    if (slot < 0 || slot >= maxBufferCount) {
+        ALOGE("Invalid slot index %d", slot);
+        return BAD_VALUE;
+    }
+
+    return releaseBuffer(slot, EGL_NO_DISPLAY, EGL_NO_SYNC_KHR, Fence::NO_FENCE);
+}
 
 int BufferQueue::addBufferSlot(const sp<GraphicBuffer>& buffer) {
     Mutex::Autolock lock(mMutex);

@@ -104,6 +104,7 @@ private:
     int dispatchSetBuffersMetadata(va_list args);
     int dispatchAddBufferSlot(va_list args);
     int dispatchGetId(va_list args);
+    int dispatchReleaseBuffer(va_list args);
 #endif
 
 protected:
@@ -130,9 +131,10 @@ protected:
     virtual int lock(ANativeWindow_Buffer* outBuffer, ARect* inOutDirtyBounds);
     virtual int unlockAndPost();
 #ifdef OMAP_ENHANCEMENT_CPCAM
-    virtual int updateAndGetCurrent(ANativeWindowBuffer** buffer);
+    virtual int updateAndGetCurrent(ANativeWindowBuffer** buffer, int &slot);
     virtual int setBuffersMetadata(const sp<MemoryBase>& metadata);
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer);
+    virtual int releaseBuffer(int slot);
     String8 getId() const;
 #endif
 

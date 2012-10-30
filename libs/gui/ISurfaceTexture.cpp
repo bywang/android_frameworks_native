@@ -44,6 +44,7 @@ enum {
     UPDATE_AND_GET_CURRENT,
     ADD_BUFFER_SLOT,
     GET_ID,
+    RELEASE_BUFFER
 #endif
 };
 
@@ -196,7 +197,7 @@ public:
     }
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
-    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf) {
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) {
         Parcel data, reply;
         data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
         status_t result = remote()->transact(UPDATE_AND_GET_CURRENT, data, &reply);
@@ -207,6 +208,19 @@ public:
         if (nonNull) {
             *buf = new GraphicBuffer();
             reply.read(**buf);
+            slot = reply.readInt32();
+        }
+        result = reply.readInt32();
+        return result;
+    }
+
+    virtual status_t releaseBuffer(int slot) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        data.writeInt32(slot);
+        status_t result = remote()->transact(RELEASE_BUFFER, data, &reply);
+        if (result != NO_ERROR) {
+            return result;
         }
         result = reply.readInt32();
         return result;
@@ -345,10 +359,12 @@ status_t BnSurfaceTexture::onTransact(
         case UPDATE_AND_GET_CURRENT: {
             CHECK_INTERFACE(ISurfaceTexture, data, reply);
             sp<GraphicBuffer> buffer;
-            int result = updateAndGetCurrent(&buffer);
+            int slot;
+            int result = updateAndGetCurrent(&buffer, slot);
             reply->writeInt32(buffer != 0);
             if (buffer != 0) {
                 reply->write(*buffer);
+                reply->writeInt32(slot);
             }
             reply->writeInt32(result);
             return NO_ERROR;
@@ -365,6 +381,13 @@ status_t BnSurfaceTexture::onTransact(
             CHECK_INTERFACE(ISurfaceTexture, data, reply);
             String8 result = getId();
             reply->writeString8(result);
+            return NO_ERROR;
+        } break;
+       case RELEASE_BUFFER: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            int slot = data.readInt32();
+            int result = releaseBuffer(slot);
+            reply->writeInt32(result);
             return NO_ERROR;
         } break;
 #endif

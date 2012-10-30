@@ -200,7 +200,10 @@ public:
 #ifdef OMAP_ENHANCEMENT_CPCAM
     // updateAndGetCurrent gets the latest buffer and gives the ownership
     // of the buffer to the client
-    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf) = 0;
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) = 0;
+
+    // releaseBuffer() release acquired buffer.
+    virtual int releaseBuffer(int slot) = 0;
 
     // addBufferSlot() adds the provided buffer to the buffer slots array.
     virtual int addBufferSlot(const sp<GraphicBuffer>& buffer) = 0;

@@ -434,6 +434,9 @@ int SurfaceTextureClient::perform(int operation, va_list args)
     case NATIVE_WINDOW_GET_ID:
         res = dispatchGetId(args);
         break;
+    case NATIVE_WINDOW_RELEASE_BUFFER:
+        res = dispatchReleaseBuffer(args);
+        break;
 #endif
     default:
         res = NAME_NOT_FOUND;
@@ -530,7 +533,8 @@ int SurfaceTextureClient::dispatchUnlockAndPost(va_list args) {
 #ifdef OMAP_ENHANCEMENT_CPCAM
 int SurfaceTextureClient::dispatchUpdateAndGetCurrent(va_list args) {
     ANativeWindowBuffer** buffer = va_arg(args, ANativeWindowBuffer**);
-    return updateAndGetCurrent(buffer);
+    int *slot = va_arg(args, int*);
+    return updateAndGetCurrent(buffer, *slot);
 }
 
 int SurfaceTextureClient::dispatchAddBufferSlot(va_list args) {
@@ -542,6 +546,12 @@ int SurfaceTextureClient::dispatchGetId(va_list args) {
     *name = getId();
     return NO_ERROR;
 }
+
+int SurfaceTextureClient::dispatchReleaseBuffer(va_list args) {
+    int slot = va_arg(args, int);
+    return releaseBuffer(slot);
+}
+
 #endif
 
 int SurfaceTextureClient::connect(int api) {
@@ -895,14 +905,24 @@ status_t SurfaceTextureClient::unlockAndPost()
 }
 
 #ifdef OMAP_ENHANCEMENT_CPCAM
-int SurfaceTextureClient::updateAndGetCurrent(android_native_buffer_t** buffer)
+int SurfaceTextureClient::updateAndGetCurrent(android_native_buffer_t** buffer, int &slot)
 {
     ALOGV("SurfaceTextureClient::updateAndGetCurrent");
     status_t err = NO_ERROR;
 
     Mutex::Autolock lock(mMutex);
-    err = mSurfaceTexture->updateAndGetCurrent(&mCurrentBuffer);
+    err = mSurfaceTexture->updateAndGetCurrent(&mCurrentBuffer, slot);
     *buffer = mCurrentBuffer.get();
+    return err;
+}
+
+int SurfaceTextureClient::releaseBuffer(int slot)
+{
+    ALOGV("SurfaceTextureClient::releaseBuffer");
+    status_t err = NO_ERROR;
+
+    Mutex::Autolock lock(mMutex);
+    err = mSurfaceTexture->releaseBuffer(slot);
     return err;
 }
 
