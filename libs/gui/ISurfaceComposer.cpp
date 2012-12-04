@@ -223,6 +223,16 @@ public:
         memcpy(info, reply.readInplace(sizeof(DisplayInfo)), sizeof(DisplayInfo));
         return reply.readInt32();
     }
+
+#ifdef OMAP_ENHANCEMENT
+    virtual uint32_t getMaxTextureSize() const
+    {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceComposer::getInterfaceDescriptor());
+        remote()->transact(BnSurfaceComposer::GET_MAX_TEXTURE_SIZE, data, &reply);
+        return reply.readInt32();
+    }
+#endif
 };
 
 IMPLEMENT_META_INTERFACE(SurfaceComposer, "android.ui.ISurfaceComposer");
@@ -332,6 +342,14 @@ status_t BnSurfaceComposer::onTransact(
             memcpy(reply->writeInplace(sizeof(DisplayInfo)), &info, sizeof(DisplayInfo));
             reply->writeInt32(result);
         } break;
+#ifdef OMAP_ENHANCEMENT
+        case GET_MAX_TEXTURE_SIZE: {
+            CHECK_INTERFACE(ISurfaceComposer, data, reply);
+            sp<IBinder> display = data.readStrongBinder();
+            int result = getMaxTextureSize();
+            reply->writeInt32(result);
+        } break;
+#endif
         default:
             return BBinder::onTransact(code, data, reply, flags);
     }

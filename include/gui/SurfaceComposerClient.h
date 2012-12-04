@@ -73,6 +73,10 @@ public:
     /* triggers screen on and waits for it to complete */
     static void unblankDisplay(const sp<IBinder>& display);
 
+#ifdef OMAP_ENHANCEMENT
+    /* Get maximal texture size supported by hardware */
+    static int getMaxTextureSize();
+#endif
     // ------------------------------------------------------------------------
     // surface creation / destruction
 

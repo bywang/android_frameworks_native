@@ -583,6 +583,11 @@ void SurfaceComposerClient::unblankDisplay(const sp<IBinder>& token) {
     ComposerService::getComposerService()->unblank(token);
 }
 
+#ifdef OMAP_ENHANCEMENT
+int SurfaceComposerClient::getMaxTextureSize() {
+    return ComposerService::getComposerService()->getMaxTextureSize();
+}
+#endif
 // ----------------------------------------------------------------------------
 
 ScreenshotClient::ScreenshotClient()
