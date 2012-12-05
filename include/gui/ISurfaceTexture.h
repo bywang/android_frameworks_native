@@ -29,6 +29,11 @@
 #include <ui/GraphicBuffer.h>
 #include <ui/Rect.h>
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+#include <binder/IMemory.h>
+#include <utils/String8.h>
+#endif
+
 namespace android {
 // ----------------------------------------------------------------------------
 
@@ -145,8 +150,14 @@ public:
         uint32_t numPendingBuffers;
     };
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t queueBuffer(int slot,
+            const QueueBufferInput& input, QueueBufferOutput* output,
+            const sp<IMemory>& metadata) = 0;
+#else
     virtual status_t queueBuffer(int slot,
             const QueueBufferInput& input, QueueBufferOutput* output) = 0;
+#endif
 
     // cancelBuffer indicates that the client does not wish to fill in the
     // buffer associated with slot and transfers ownership of the slot back to
@@ -185,6 +196,25 @@ public:
     // This method will fail if the the SurfaceTexture is not currently
     // connected to the specified client API.
     virtual status_t disconnect(int api) = 0;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    // updateAndGetCurrent gets the latest buffer and gives the ownership
+    // of the buffer to the client
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) = 0;
+
+    // releaseBuffer() release acquired buffer.
+    virtual int releaseBuffer(int slot) = 0;
+
+    // addBufferSlot() adds the provided buffer to the buffer slots array.
+    virtual int addBufferSlot(const sp<GraphicBuffer>& buffer) = 0;
+
+public:
+    // gets a process unique id for the SurfaceTexture
+    // if id is not already created, the id will be created here
+    virtual String8 getId() const {
+        return getId();
+    }
+#endif
 };
 
 // ----------------------------------------------------------------------------

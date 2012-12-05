@@ -101,6 +101,9 @@ HWComposer::HWComposer(
 {
     for (size_t i =0 ; i<MAX_DISPLAYS ; i++) {
         mLists[i] = 0;
+#ifdef OMAP_ENHANCEMENT
+        mListsExt[i] = NULL;
+#endif
     }
 
     char value[PROPERTY_VALUE_MAX];
@@ -141,6 +144,9 @@ HWComposer::HWComposer(
             mCBContext->hwc = this;
             mCBContext->procs.invalidate = &hook_invalidate;
             mCBContext->procs.vsync = &hook_vsync;
+#ifdef OMAP_ENHANCEMENT
+            mCBContext->procs.extension_cb = &hook_extension_cb;
+#endif
             if (hwcHasApiVersion(mHwc, HWC_DEVICE_API_VERSION_1_1))
                 mCBContext->procs.hotplug = &hook_hotplug;
             else
@@ -284,6 +290,36 @@ void HWComposer::hook_hotplug(const struct hwc_procs* procs, int disp,
             const_cast<hwc_procs_t*>(procs));
     ctx->hwc->hotplug(disp, connected);
 }
+
+#ifdef OMAP_ENHANCEMENT
+int HWComposer::hook_extension_cb(struct hwc_procs* procs, int operation,
+        void** data, int size) {
+    int rv = -1;
+    switch (operation) {
+    case HWC_EXTENDED_OP_LAYERDATA:
+        if (size == -1)
+            return 0;
+        if (size != sizeof(hwc_layer_extended_t))
+            return -1;
+        rv = reinterpret_cast<cb_context *>(procs)->hwc->extendedApiLayerData((hwc_layer_extended_t*)*data);
+        break;
+    }
+    return rv;
+}
+
+int HWComposer::extendedApiLayerData(hwc_layer_extended* linfo) {
+    uint32_t idx = linfo->idx;
+    uint32_t dpy = linfo->dpy;
+    if (uint32_t(dpy)>31 || !mAllocatedDisplayIDs.hasBit(dpy))
+        return -1;
+    if (idx >= mListsExt[dpy]->numHwLayers)
+        return -1;
+    *linfo = mListsExt[dpy]->hwLayers[idx];
+    linfo->idx = idx;
+    linfo->dpy = dpy;
+    return 0;
+}
+#endif
 
 void HWComposer::invalidate() {
     mFlinger->repaintEverything();
@@ -500,6 +536,11 @@ status_t HWComposer::createWorkList(int32_t id, size_t numLayers) {
             free(disp.list);
             disp.list = (hwc_display_contents_1_t*)malloc(size);
             disp.capacity = numLayers;
+#ifdef OMAP_ENHANCEMENT
+            free(disp.listExt);
+            size = sizeof(hwc_layer_list_extended_t) + numLayers * sizeof(hwc_layer_extended_t);
+            disp.listExt = (hwc_layer_list_extended_t*)malloc(size);
+#endif
         }
         if (hwcHasApiVersion(mHwc, HWC_DEVICE_API_VERSION_1_1)) {
             disp.framebufferTarget = &disp.list->hwLayers[numLayers - 1];
@@ -521,6 +562,10 @@ status_t HWComposer::createWorkList(int32_t id, size_t numLayers) {
         }
         disp.list->retireFenceFd = -1;
         disp.list->flags = HWC_GEOMETRY_CHANGED;
+#ifdef OMAP_ENHANCEMENT
+        disp.list->flags |= HWC_EXTENDED_API;
+        disp.listExt->numHwLayers = numLayers;
+#endif
         disp.list->numHwLayers = numLayers;
     }
     return NO_ERROR;
@@ -571,6 +616,9 @@ status_t HWComposer::prepare() {
                   i, disp.list->numHwLayers);
         }
         mLists[i] = disp.list;
+#ifdef OMAP_ENHANCEMENT
+        mListsExt[i] = disp.listExt;
+#endif
         if (mLists[i]) {
             if (hwcHasApiVersion(mHwc, HWC_DEVICE_API_VERSION_1_2)) {
                 mLists[i]->outbuf = NULL;
@@ -765,9 +813,20 @@ class Iterable : public HWComposer::HWCLayer {
 protected:
     HWCTYPE* const mLayerList;
     HWCTYPE* mCurrentLayer;
+#ifdef OMAP_ENHANCEMENT
+    hwc_layer_extended_t* const mLayerListExt;
+    hwc_layer_extended_t* mCurrentLayerExt;
+    Iterable(HWCTYPE* layer, hwc_layer_extended_t* layerExt) : mLayerList(layer),
+            mCurrentLayer(layer), mLayerListExt(layerExt), mCurrentLayerExt(layerExt) { }
+#else
     Iterable(HWCTYPE* layer) : mLayerList(layer), mCurrentLayer(layer) { }
+#endif
     inline HWCTYPE const * getLayer() const { return mCurrentLayer; }
     inline HWCTYPE* getLayer() { return mCurrentLayer; }
+#ifdef OMAP_ENHANCEMENT
+    inline hwc_layer_extended_t const * getLayerExt() const { return mCurrentLayerExt; }
+    inline hwc_layer_extended_t* getLayerExt() { return mCurrentLayerExt; }
+#endif
     virtual ~Iterable() { }
 private:
     // returns a copy of ourselves
@@ -776,6 +835,9 @@ private:
     }
     virtual status_t setLayer(size_t index) {
         mCurrentLayer = &mLayerList[index];
+#ifdef OMAP_ENHANCEMENT
+        mCurrentLayerExt = &mLayerListExt[index];
+#endif
         return NO_ERROR;
     }
 };
@@ -786,8 +848,13 @@ private:
  */
 class HWCLayerVersion1 : public Iterable<HWCLayerVersion1, hwc_layer_1_t> {
 public:
+#ifdef OMAP_ENHANCEMENT
+    HWCLayerVersion1(hwc_layer_1_t* layer, hwc_layer_extended_t* layerExt)
+        : Iterable<HWCLayerVersion1, hwc_layer_1_t>(layer, layerExt) { }
+#else
     HWCLayerVersion1(hwc_layer_1_t* layer)
         : Iterable<HWCLayerVersion1, hwc_layer_1_t>(layer) { }
+#endif
 
     virtual int32_t getCompositionType() const {
         return getLayer()->compositionType;
@@ -803,6 +870,12 @@ public:
     virtual void setAcquireFenceFd(int fenceFd) {
         getLayer()->acquireFenceFd = fenceFd;
     }
+
+#ifdef OMAP_ENHANCEMENT
+    virtual void setIdentity(uint32_t identity) {
+        getLayerExt()->identity = identity;
+    }
+#endif
 
     virtual void setDefaultState() {
         getLayer()->compositionType = HWC_FRAMEBUFFER;
@@ -877,7 +950,11 @@ HWComposer::LayerListIterator HWComposer::getLayerIterator(int32_t id, size_t in
     if (!mHwc || !disp.list || index > disp.list->numHwLayers) {
         return LayerListIterator();
     }
+#ifdef OMAP_ENHANCEMENT
+    return LayerListIterator(new HWCLayerVersion1(disp.list->hwLayers, disp.listExt->hwLayers), index);
+#else
     return LayerListIterator(new HWCLayerVersion1(disp.list->hwLayers), index);
+#endif
 }
 
 /*

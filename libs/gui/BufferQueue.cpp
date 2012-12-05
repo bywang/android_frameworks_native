@@ -82,7 +82,14 @@ BufferQueue::BufferQueue(bool allowSynchronousMode,
     mTransformHint(0)
 {
     // Choose a name using the PID and a process-unique ID.
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    int bqPid = getpid();
+    int bqUniqueId = createProcessUniqueId();
+    mConsumerName = String8::format("unnamed-%d-%d", bqPid, bqUniqueId);
+    mId = String8::format("bq-%d-%d", bqPid, bqUniqueId);
+#else
     mConsumerName = String8::format("unnamed-%d-%d", getpid(), createProcessUniqueId());
+#endif
 
     ST_LOGV("BufferQueue");
     if (allocator == NULL) {
@@ -222,6 +229,11 @@ int BufferQueue::query(int what, int* outValue)
     case NATIVE_WINDOW_CONSUMER_RUNNING_BEHIND:
         value = (mQueue.size() >= 2);
         break;
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    case NATIVE_WINDOW_BUFFER_COUNT:
+        value = mMaxAcquiredBufferCount;
+        break;
+#endif
     default:
         return BAD_VALUE;
     }
@@ -477,8 +489,14 @@ status_t BufferQueue::setSynchronousMode(bool enabled) {
     return err;
 }
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+status_t BufferQueue::queueBuffer(int buf,
+        const QueueBufferInput& input, QueueBufferOutput* output,
+        const sp<IMemory>& metadata) {
+#else
 status_t BufferQueue::queueBuffer(int buf,
         const QueueBufferInput& input, QueueBufferOutput* output) {
+#endif
     ATRACE_CALL();
     ATRACE_BUFFER_INDEX(buf);
 
@@ -573,6 +591,9 @@ status_t BufferQueue::queueBuffer(int buf,
         mSlots[buf].mScalingMode = scalingMode;
         mFrameCounter++;
         mSlots[buf].mFrameNumber = mFrameCounter;
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        mSlots[buf].mMetadata = metadata;
+#endif
 
         mBufferHasBeenQueued = true;
         mDequeueCondition.broadcast();
@@ -804,6 +825,13 @@ status_t BufferQueue::acquireBuffer(BufferItem *buffer) {
     ATRACE_CALL();
     Mutex::Autolock _l(mMutex);
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    if (mAbandoned) {
+        ST_LOGE("acquireBuffer: SurfaceTexture has been abandoned!");
+        return NO_INIT;
+    }
+#endif
+
     // Check that the consumer doesn't currently have the maximum number of
     // buffers acquired.  We allow the max buffer count to be exceeded by one
     // buffer, so that the consumer can successfully set up the newly acquired
@@ -839,6 +867,9 @@ status_t BufferQueue::acquireBuffer(BufferItem *buffer) {
         buffer->mScalingMode = mSlots[buf].mScalingMode;
         buffer->mFrameNumber = mSlots[buf].mFrameNumber;
         buffer->mTimestamp = mSlots[buf].mTimestamp;
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        buffer->mMetadata = mSlots[buf].mMetadata;
+#endif
         buffer->mBuf = buf;
         buffer->mFence = mSlots[buf].mFence;
 
@@ -1072,5 +1103,85 @@ void BufferQueue::ProxyConsumerListener::onBuffersReleased() {
         listener->onBuffersReleased();
     }
 }
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+status_t BufferQueue::updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) {
+    ST_LOGV("updateAndGetCurrent");
+    BufferItem item;
+    status_t status = acquireBuffer(&item);
+    if (status != NO_BUFFER_AVAILABLE) {
+        *buf = mSlots[item.mBuf].mGraphicBuffer;
+        slot = item.mBuf;
+    }
+    return status;
+}
+
+status_t BufferQueue::releaseBuffer(int slot) {
+    ST_LOGV("releaseBuffer");
+
+    const int maxBufferCount = getMaxBufferCountLocked();
+    if (slot < 0 || slot >= maxBufferCount) {
+        ALOGE("Invalid slot index %d", slot);
+        return BAD_VALUE;
+    }
+
+    return releaseBuffer(slot, EGL_NO_DISPLAY, EGL_NO_SYNC_KHR, Fence::NO_FENCE);
+}
+
+int BufferQueue::addBufferSlot(const sp<GraphicBuffer>& buffer) {
+    Mutex::Autolock lock(mMutex);
+
+    // Find first free slot to add buffer
+    const int maxBufferCount = getMaxBufferCountLocked();
+    for (int i = 0; i < maxBufferCount; i++) {
+        if ((mSlots[i].mGraphicBuffer == NULL) &&
+                (mSlots[i].mBufferState == BufferSlot::FREE)) {
+            // add buffer is dequeued state since client still has ownership of it
+            mSlots[i].mBufferState = BufferSlot::DEQUEUED;
+            mSlots[i].mRequestBufferCalled = true;
+            mSlots[i].mGraphicBuffer = buffer;
+            return i;
+        }
+    }
+    return -1;
+}
+
+status_t BufferQueue::getBuffer(int slot, BufferItem *buffer) {
+    ATRACE_CALL();
+    Mutex::Autolock _l(mMutex);
+
+    const int maxBufferCount = getMaxBufferCountLocked();
+    if (slot < 0 || slot >= maxBufferCount) {
+        ALOGE("Invalid slot index");
+        return BAD_VALUE;
+    }
+
+    ATRACE_BUFFER_INDEX(slot);
+
+    if (mSlots[slot].mAcquireCalled) {
+        buffer->mGraphicBuffer = mSlots[slot].mGraphicBuffer;
+    } else {
+        buffer->mGraphicBuffer = NULL;
+    }
+
+    buffer->mCrop = mSlots[slot].mCrop;
+    buffer->mTransform = mSlots[slot].mTransform;
+    buffer->mScalingMode = mSlots[slot].mScalingMode;
+    buffer->mFrameNumber = mSlots[slot].mFrameNumber;
+    buffer->mTimestamp = mSlots[slot].mTimestamp;
+    buffer->mMetadata = mSlots[slot].mMetadata;
+
+    buffer->mBuf = slot;
+
+    return OK;
+
+}
+
+String8 BufferQueue::getId() const {
+    Mutex::Autolock _l(mMutex);
+    return mId;
+}
+
+#endif
 
 }; // namespace android

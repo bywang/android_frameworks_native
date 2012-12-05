@@ -53,6 +53,9 @@ class Loader : public Singleton<Loader>
     };
     
     String8 mDriverTag;
+#ifdef OMAP_ENHANCEMENT_MULTIGPU
+    String8 mProcessorType;
+#endif
     getProcAddressType getProcAddress;
     
 public:
@@ -70,6 +73,10 @@ private:
             char const * const * api, 
             __eglMustCastToProperFunctionPointerType* curr, 
             getProcAddressType getProcAddress); 
+#ifdef OMAP_ENHANCEMENT_MULTIGPU
+    int checkProcessorType(void);
+#endif
+
 };
 
 // ----------------------------------------------------------------------------

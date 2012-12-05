@@ -132,6 +132,9 @@ public:
 
     virtual const char* getTypeId() const { return "LayerBase"; }
 
+#ifdef OMAP_ENHANCEMENT
+    virtual void setIdentity(HWComposer::HWCLayerInterface& layer) { }
+#endif
     virtual void setGeometry(const sp<const DisplayDevice>& hw,
             HWComposer::HWCLayerInterface& layer);
     virtual void setPerFrameData(const sp<const DisplayDevice>& hw,

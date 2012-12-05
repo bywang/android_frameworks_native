@@ -40,6 +40,12 @@ enum {
     SET_SYNCHRONOUS_MODE,
     CONNECT,
     DISCONNECT,
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    UPDATE_AND_GET_CURRENT,
+    ADD_BUFFER_SLOT,
+    GET_ID,
+    RELEASE_BUFFER
+#endif
 };
 
 
@@ -104,12 +110,21 @@ public:
         return result;
     }
 
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t queueBuffer(int buf,
+            const QueueBufferInput& input, QueueBufferOutput* output,
+            const sp<IMemory>& metadata) {
+#else
     virtual status_t queueBuffer(int buf,
             const QueueBufferInput& input, QueueBufferOutput* output) {
+#endif
         Parcel data, reply;
         data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
         data.writeInt32(buf);
         data.write(input);
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        data.writeStrongBinder(metadata->asBinder());
+#endif
         status_t result = remote()->transact(QUEUE_BUFFER, data, &reply);
         if (result != NO_ERROR) {
             return result;
@@ -180,6 +195,57 @@ public:
         result = reply.readInt32();
         return result;
     }
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+    virtual status_t updateAndGetCurrent(sp<GraphicBuffer>* buf, int &slot) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        status_t result = remote()->transact(UPDATE_AND_GET_CURRENT, data, &reply);
+        if (result != NO_ERROR) {
+            return result;
+        }
+        bool nonNull = reply.readInt32();
+        if (nonNull) {
+            *buf = new GraphicBuffer();
+            reply.read(**buf);
+            slot = reply.readInt32();
+        }
+        result = reply.readInt32();
+        return result;
+    }
+
+    virtual status_t releaseBuffer(int slot) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        data.writeInt32(slot);
+        status_t result = remote()->transact(RELEASE_BUFFER, data, &reply);
+        if (result != NO_ERROR) {
+            return result;
+        }
+        result = reply.readInt32();
+        return result;
+    }
+
+    virtual int addBufferSlot(const sp<GraphicBuffer>& buffer) {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        data.write(*buffer);
+        status_t result = remote()->transact(ADD_BUFFER_SLOT, data, &reply);
+        if (result != NO_ERROR) {
+            return -1;
+        }
+        int bufferIndex = reply.readInt32();
+        return bufferIndex;
+    }
+
+    virtual String8 getId() const {
+        Parcel data, reply;
+        data.writeInterfaceToken(ISurfaceTexture::getInterfaceDescriptor());
+        status_t result =remote()->transact(GET_ID, data, &reply);
+        String8 id = reply.readString8();
+        return id;
+    }
+#endif
 };
 
 IMPLEMENT_META_INTERFACE(SurfaceTexture, "android.gui.SurfaceTexture");
@@ -234,7 +300,12 @@ status_t BnSurfaceTexture::onTransact(
             QueueBufferOutput* const output =
                     reinterpret_cast<QueueBufferOutput *>(
                             reply->writeInplace(sizeof(QueueBufferOutput)));
+#ifdef OMAP_ENHANCEMENT_CPCAM
+            sp<IMemory> metadata = interface_cast<IMemory>(data.readStrongBinder());
+            status_t result = queueBuffer(buf, input, output, metadata);
+#else
             status_t result = queueBuffer(buf, input, output);
+#endif
             reply->writeInt32(result);
             return NO_ERROR;
         } break;
@@ -283,6 +354,43 @@ status_t BnSurfaceTexture::onTransact(
             reply->writeInt32(res);
             return NO_ERROR;
         } break;
+
+#ifdef OMAP_ENHANCEMENT_CPCAM
+        case UPDATE_AND_GET_CURRENT: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            sp<GraphicBuffer> buffer;
+            int slot;
+            int result = updateAndGetCurrent(&buffer, slot);
+            reply->writeInt32(buffer != 0);
+            if (buffer != 0) {
+                reply->write(*buffer);
+                reply->writeInt32(slot);
+            }
+            reply->writeInt32(result);
+            return NO_ERROR;
+        } break;
+       case ADD_BUFFER_SLOT: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            sp<GraphicBuffer> buffer = new GraphicBuffer();
+            data.read(*buffer);
+            int bufferIndex = addBufferSlot(buffer);
+            reply->writeInt32(bufferIndex);
+            return NO_ERROR;
+        } break;
+       case GET_ID: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            String8 result = getId();
+            reply->writeString8(result);
+            return NO_ERROR;
+        } break;
+       case RELEASE_BUFFER: {
+            CHECK_INTERFACE(ISurfaceTexture, data, reply);
+            int slot = data.readInt32();
+            int result = releaseBuffer(slot);
+            reply->writeInt32(result);
+            return NO_ERROR;
+        } break;
+#endif
     }
     return BBinder::onTransact(code, data, reply, flags);
 }
