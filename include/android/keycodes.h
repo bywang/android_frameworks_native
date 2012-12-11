@@ -270,6 +270,7 @@ enum {
     AKEYCODE_BRIGHTNESS_UP   = 224,
     AKEYCODE_BRIGHTNESS_AUTO = 225,
     AKEYCODE_SCREENSHOT      = 226,
+    AKEYCODE_HIDENAV         = 227,
 
 
     // NOTE: If you add a new keycode here you must also add it to several other files.
