@@ -616,6 +616,12 @@ status_t SurfaceComposerClient::getDisplayInfo(
     return getDisplayInfo(getBuiltInDisplay(displayId), info);
 }
 
+#ifdef OMAP_ENHANCEMENT
+int SurfaceComposerClient::getMaxTextureSize() {
+    return ComposerService::getComposerService()->getMaxTextureSize();
+}
+#endif
+
 // ----------------------------------------------------------------------------
 
 ScreenshotClient::ScreenshotClient()

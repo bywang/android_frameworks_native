@@ -109,6 +109,11 @@ public:
     /* returns information about a display
      * intended to be used to get information about built-in displays */
     virtual status_t getDisplayInfo(const sp<IBinder>& display, DisplayInfo* info) = 0;
+
+#ifdef OMAP_ENHANCEMENT
+    /* returns maximal texture size supported by hardware */
+    virtual uint32_t getMaxTextureSize() const = 0;
+#endif
 };
 
 // ----------------------------------------------------------------------------
@@ -131,6 +136,9 @@ public:
         UNBLANK,
         GET_DISPLAY_INFO,
         CONNECT_DISPLAY,
+#ifdef OMAP_ENHANCEMENT
+        GET_MAX_TEXTURE_SIZE,
+#endif
     };
 
     virtual status_t onTransact(uint32_t code, const Parcel& data,

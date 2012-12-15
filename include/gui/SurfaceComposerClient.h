@@ -77,6 +77,10 @@ public:
     // this legacy function (when they shouldn't).
     static status_t getDisplayInfo(int32_t displayId, DisplayInfo* info);
 
+#ifdef OMAP_ENHANCEMENT
+    /* Get maximal texture size supported by hardware */
+    static int getMaxTextureSize();
+#endif
     // ------------------------------------------------------------------------
     // surface creation / destruction
 
