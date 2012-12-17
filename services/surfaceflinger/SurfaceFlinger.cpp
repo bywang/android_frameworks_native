@@ -974,6 +974,11 @@ void SurfaceFlinger::setUpHWComposer() {
                         hw->getVisibleLayersSortedByZ());
                     const size_t count = currentLayers.size();
                     if (hwc.createWorkList(id, count) == NO_ERROR) {
+#ifdef OMAP_ENHANCEMENT
+                        if (hwc.setLayerStack(id, hw->getLayerStack()) != NO_ERROR) {
+                            continue;
+                        }
+#endif
                         HWComposer::LayerListIterator cur = hwc.begin(id);
                         const HWComposer::LayerListIterator end = hwc.end(id);
                         for (size_t i=0 ; cur!=end && i<count ; ++i, ++cur) {

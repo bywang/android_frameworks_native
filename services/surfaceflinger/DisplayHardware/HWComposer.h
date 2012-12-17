@@ -42,6 +42,7 @@ struct framebuffer_device_t;
 #ifdef OMAP_ENHANCEMENT
 struct hwc_layer_extended;
 struct hwc_layer_list_extended;
+struct hwc_layer_stack;
 #endif
 
 namespace android {
@@ -106,6 +107,10 @@ public:
 
     // create a work list for numLayers layer. sets HWC_GEOMETRY_CHANGED.
     status_t createWorkList(int32_t id, size_t numLayers);
+
+#ifdef OMAP_ENHANCEMENT
+    status_t setLayerStack(int32_t id, uint32_t stack);
+#endif
 
     bool supportsFramebufferTarget() const;
 
@@ -283,6 +288,7 @@ private:
     static int hook_extension_cb(struct hwc_procs* procs, int operation,
             void** data, int size);
     int extendedApiLayerData(hwc_layer_extended* linfo);
+    int extendedApiLayerStack(hwc_layer_stack* param);
 #endif
     inline void invalidate();
     inline void vsync(int disp, int64_t timestamp);
@@ -315,6 +321,7 @@ private:
         hwc_display_contents_1* list;
 #ifdef OMAP_ENHANCEMENT
         hwc_layer_list_extended* listExt;
+        uint32_t layerStack;
 #endif
         hwc_layer_1* framebufferTarget;
         buffer_handle_t fbTargetHandle;

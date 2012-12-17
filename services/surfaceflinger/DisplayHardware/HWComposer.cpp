@@ -440,6 +440,11 @@ int HWComposer::hook_extension_cb(struct hwc_procs* procs, int operation,
             return -1;
         rv = reinterpret_cast<cb_context *>(procs)->hwc->extendedApiLayerData((hwc_layer_extended_t*)*data);
         break;
+    case HWC_EXTENDED_OP_LAYERSTACK:
+        if (size != sizeof(hwc_layer_stack_t))
+            return -1;
+        rv = reinterpret_cast<cb_context *>(procs)->hwc->extendedApiLayerStack((hwc_layer_stack_t*)*data);
+        break;
     }
     return rv;
 }
@@ -455,6 +460,14 @@ int HWComposer::extendedApiLayerData(hwc_layer_extended* linfo) {
     linfo->idx = idx;
     linfo->dpy = dpy;
     return 0;
+}
+
+int HWComposer::extendedApiLayerStack(hwc_layer_stack* param) {
+    uint32_t dpy = param->dpy;
+    if (dpy > 31 || !mAllocatedDisplayIDs.hasBit(dpy))
+        return BAD_INDEX;
+    param->stack = mDisplayData[dpy].layerStack;
+    return NO_ERROR;
 }
 #endif
 
@@ -707,11 +720,29 @@ status_t HWComposer::createWorkList(int32_t id, size_t numLayers) {
 #ifdef OMAP_ENHANCEMENT
         disp.list->flags |= HWC_EXTENDED_API;
         disp.listExt->numHwLayers = numLayers;
+        disp.layerStack = 0;
 #endif
         hwcNumHwLayers(mHwc, disp.list) = numLayers;
     }
     return NO_ERROR;
 }
+
+#ifdef OMAP_ENHANCEMENT
+status_t HWComposer::setLayerStack(int32_t id, uint32_t stack) {
+    if (uint32_t(id)>31 || !mAllocatedDisplayIDs.hasBit(id)) {
+        return BAD_INDEX;
+    }
+
+    DisplayData& disp(mDisplayData[id]);
+    if (!disp.list) {
+        return BAD_INDEX;
+    }
+
+    disp.layerStack = stack;
+
+    return NO_ERROR;
+}
+#endif
 
 status_t HWComposer::setFramebufferTarget(int32_t id,
         const sp<Fence>& acquireFence, const sp<GraphicBuffer>& buf) {
