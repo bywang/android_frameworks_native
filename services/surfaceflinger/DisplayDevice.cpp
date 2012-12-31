@@ -92,6 +92,9 @@ DisplayDevice::DisplayDevice(
       mSecureLayerVisible(false),
       mScreenAcquired(false),
       mLayerStack(0),
+      mXRotatef(0.0),
+      mYRotatef(0.0),
+      mZRotatef(0.0),
       mOrientation()
 {
     init(config);
@@ -335,6 +338,19 @@ void DisplayDevice::acquireScreen() const {
 
 bool DisplayDevice::isScreenAcquired() const {
     return mScreenAcquired;
+}
+
+// ----------------------------------------------------------------------------
+void DisplayDevice::setXRotatef(float xRotatef){
+    mXRotatef = xRotatef;
+}
+
+void DisplayDevice::setYRotatef(float yRotatef){
+    mYRotatef = yRotatef;
+}
+
+void DisplayDevice::setZRotatef(float zRotatef){
+    mZRotatef = zRotatef;
 }
 
 // ----------------------------------------------------------------------------

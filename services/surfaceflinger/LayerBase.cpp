@@ -430,6 +430,11 @@ void LayerBase::drawWithOpenGL(const sp<const DisplayDevice>& hw, const Region& 
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glTexCoordPointer(2, GL_FLOAT, 0, texCoords);
     glVertexPointer(2, GL_FLOAT, 0, mesh.getVertices());
+#if 1
+    glRotatef(GLfloat(hw->getXRotatef()), 1, 0, 0);
+    glRotatef(GLfloat(hw->getYRotatef()), 0, 1, 0);
+    glRotatef(GLfloat(hw->getZRotatef()), 0, 0, 1);
+#endif
     glDrawArrays(GL_TRIANGLE_FAN, 0, mesh.getVertexCount());
 
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);

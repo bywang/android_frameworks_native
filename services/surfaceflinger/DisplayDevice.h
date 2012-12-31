@@ -114,6 +114,16 @@ public:
     int32_t                 getHwcDisplayId() const { return mHwcDisplayId; }
     const wp<IBinder>&      getDisplayToken() const { return mDisplayToken; }
 
+#if 1
+    void                    setXRotatef(float xRotatef);
+    void                    setYRotatef(float yRotatef);
+    void                    setZRotatef(float zRotatef);
+
+    float                    getXRotatef() const {return mXRotatef;}
+    float                    getYRotatef() const {return mYRotatef;}
+    float                    getZRotatef() const {return mZRotatef;}
+#endif
+
     void swapBuffers(HWComposer& hwc) const;
     status_t compositionComplete() const;
     
@@ -174,6 +184,12 @@ private:
     mutable uint32_t mPageFlipCount;
     String8         mDisplayName;
     bool            mIsSecure;
+
+#if 1
+    float           mXRotatef;
+    float           mYRotatef;
+    float           mZRotatef;
+#endif
 
     /*
      * Can only accessed from the main thread, these members
