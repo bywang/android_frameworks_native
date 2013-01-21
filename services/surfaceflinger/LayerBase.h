@@ -139,6 +139,10 @@ public:
             HWComposer::HWCLayerInterface& layer);
     virtual void setPerFrameData(const sp<const DisplayDevice>& hw,
             HWComposer::HWCLayerInterface& layer);
+#if 1
+    virtual void setLayerName(const sp<const DisplayDevice>& hw,
+            HWComposer::HWCLayerInterface& layer, String8 layerName);
+#endif
     virtual void setAcquireFence(const sp<const DisplayDevice>& hw,
             HWComposer::HWCLayerInterface& layer);
 

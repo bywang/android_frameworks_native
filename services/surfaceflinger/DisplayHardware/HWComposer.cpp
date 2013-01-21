@@ -1095,6 +1095,9 @@ public:
         getLayer()->flags = HWC_SKIP_LAYER;
         getLayer()->handle = 0;
         getLayer()->transform = 0;
+#if 1
+        getLayer()->layerName = NULL;
+#endif
         getLayer()->blending = HWC_BLENDING_NONE;
         getLayer()->visibleRegionScreen.numRects = 0;
         getLayer()->visibleRegionScreen.rects = NULL;
@@ -1109,6 +1112,11 @@ public:
     virtual void setBlending(uint32_t blending) {
         getLayer()->blending = blending;
     }
+#if 1
+    virtual void setLayerName(String8 layerName) {
+        getLayer()->layerName = layerName.string();
+    }
+#endif
     virtual void setTransform(uint32_t transform) {
         getLayer()->transform = transform;
     }
@@ -1191,6 +1199,9 @@ public:
         getLayer()->handle = 0;
         getLayer()->transform = 0;
         getLayer()->blending = HWC_BLENDING_NONE;
+#if 1
+        getLayer()->layerName = NULL;
+#endif
         getLayer()->visibleRegionScreen.numRects = 0;
         getLayer()->visibleRegionScreen.rects = NULL;
         getLayer()->acquireFenceFd = -1;
@@ -1209,6 +1220,11 @@ public:
     virtual void setTransform(uint32_t transform) {
         getLayer()->transform = transform;
     }
+#if 1
+    virtual void setLayerName(String8 layerName) {
+        getLayer()->layerName = layerName.string();
+    }
+#endif
     virtual void setFrame(const Rect& frame) {
         reinterpret_cast<Rect&>(getLayer()->displayFrame) = frame;
     }

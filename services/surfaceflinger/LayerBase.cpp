@@ -306,7 +306,13 @@ void LayerBase::setPerFrameData(const sp<const DisplayDevice>& hw,
     const Transform& tr = hw->getTransform();
     layer.setVisibleRegionScreen(tr.transform(visibleRegion));
 }
-
+#if 1
+void LayerBase::setLayerName(const sp<const DisplayDevice>& hw,
+        HWComposer::HWCLayerInterface& layer, String8 layerName) {
+    // set hardware layer name
+    layer.setLayerName(layerName);
+}
+#endif
 void LayerBase::setAcquireFence(const sp<const DisplayDevice>& hw,
         HWComposer::HWCLayerInterface& layer) {
     layer.setAcquireFenceFd(-1);
@@ -370,6 +376,8 @@ void LayerBase::drawWithOpenGL(const sp<const DisplayDevice>& hw, const Region& 
 {
     const uint32_t fbHeight = hw->getHeight();
     const State& s(drawingState());
+    
+    //ALOGD("display device name is %s", hw->getDisplayName().string());
 
     GLenum src = mPremultipliedAlpha ? GL_ONE : GL_SRC_ALPHA;
     if (CC_UNLIKELY(s.alpha < 0xFF)) {

@@ -256,7 +256,7 @@ void Layer::setGeometry(
     // we can't do alpha-fade with the hwc HAL
     const State& s(drawingState());
     if (s.alpha < 0xFF) {
-        layer.setSkip(true);
+        //layer.setSkip(true);
     }
 
     if (isSecure() && !hw->isSecure()) {

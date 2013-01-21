@@ -1013,6 +1013,12 @@ void SurfaceFlinger::setUpHWComposer() {
                      */
                     const sp<LayerBase>& layer(currentLayers[i]);
                     layer->setPerFrameData(hw, *cur);
+#if 1
+                    if(layer->getName().find("Overlay", 0) >= 0)
+                        layer->setLayerName(hw, *cur, String8("ext_wby"));
+                    else
+                        layer->setLayerName(hw, *cur, layer->getName());
+#endif
                 }
             }
         }
@@ -1609,6 +1615,7 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
                         break;
                     }
                     case HWC_FRAMEBUFFER: {
+                        //ALOGD("layer name is %s", layer->getName().string());
                         layer->draw(hw, clip);
                         break;
                     }

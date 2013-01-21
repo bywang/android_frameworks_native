@@ -163,6 +163,9 @@ public:
         virtual void setBuffer(const sp<GraphicBuffer>& buffer) = 0;
         virtual void setAcquireFenceFd(int fenceFd) = 0;
         virtual void onDisplayed() = 0;
+#if 1
+        virtual void setLayerName(String8 layerName) = 0;
+#endif
     };
 
     /*
