@@ -264,6 +264,13 @@ bool SensorService::threadLoop()
         }
 
         recordLastValue(buffer, count);
+#if 1
+        for(size_t i=0; i<count; i++) {
+            if(buffer[i].type == Sensor::TYPE_ACCELEROMETER) {
+                updateAngleValue(&buffer[i]);
+            }
+        }
+#endif
 
         // handle virtual sensors
         if (count && vcount) {
@@ -328,6 +335,34 @@ bool SensorService::threadLoop()
     abort();
     return false;
 }
+
+#if 1
+void SensorService::updateAngleValue(sensors_event_t const *buffer)
+{
+    Mutex::Autolock _l(mLock);
+
+    //ALOGD("sensor value x: %f, y:%f, z:%f", buffer->data[0], buffer->data[1], buffer->data[2]);
+    const float pi = 3.14159;
+    float ax = buffer->data[0];
+    float ay = buffer->data[1];
+    float az = buffer->data[2];
+
+    float tanx = ay/az;
+    float tany = -ax/sqrt(ay*ay+az*az);
+    
+    float xrad = atan(tanx)*180/pi;
+    float yrad = atan(tany)*180/pi;
+
+    String8 result, xradStr, yradStr;
+
+    xradStr = result.format("%f", xrad);
+    yradStr = result.format("%f", yrad);
+
+    property_set("dev.angle.x.cur", xradStr.string());
+    property_set("dev.angle.y.cur", yradStr.string());
+
+}
+#endif
 
 void SensorService::recordLastValue(
         sensors_event_t const * buffer, size_t count)
