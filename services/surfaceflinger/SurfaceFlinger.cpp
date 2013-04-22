@@ -947,7 +947,10 @@ void SurfaceFlinger::rebuildLayerStacks() {
                                 layer->visibleNonTransparentRegion));
                         drawRegion.andSelf(bounds);
                         if (!drawRegion.isEmpty()) {
-                            layersSortedByZ.add(layer);
+                            if((hw->getDisplayType()==2) && (layer->getName().find("Overlay", 0) >= 0))
+                                continue;
+                            else
+                                layersSortedByZ.add(layer);
                         }
                     }
                 }
@@ -1495,7 +1498,7 @@ void SurfaceFlinger::invalidateHwcGeometry()
 }
 
 
-void SurfaceFlinger::doDisplayComposition(const sp<const DisplayDevice>& hw,
+void SurfaceFlinger::doDisplayComposition(const sp<DisplayDevice>& hw,
         const Region& inDirtyRegion)
 {
     Region dirtyRegion(inDirtyRegion);
@@ -1532,7 +1535,7 @@ void SurfaceFlinger::doDisplayComposition(const sp<const DisplayDevice>& hw,
     hw->swapBuffers(getHwComposer());
 }
 
-void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const Region& dirty)
+void SurfaceFlinger::doComposeSurfaces(const sp<DisplayDevice>& hw, const Region& dirty)
 {
     const int32_t id = hw->getHwcDisplayId();
     HWComposer& hwc(getHwComposer());
@@ -1596,6 +1599,44 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
     const Vector< sp<LayerBase> >& layers(hw->getVisibleLayersSortedByZ());
     const size_t count = layers.size();
     const Transform& tr = hw->getTransform();
+    char xValueCur[PROPERTY_VALUE_MAX];
+    char yValueCur[PROPERTY_VALUE_MAX];
+    char xValuePre[PROPERTY_VALUE_MAX];
+    char yValuePre[PROPERTY_VALUE_MAX];
+
+    property_get("dev.angle.x.cur", xValueCur, "0.0");
+    property_get("dev.angle.y.cur", yValueCur, "0.0");
+    property_get("dev.angle.x.pre", xValuePre, "0.0");
+    property_get("dev.angle.y.pre", yValuePre, "0.0");
+
+    float xValuefCur = atof(xValueCur);
+    float yValuefCur = atof(yValueCur);
+    float xValuefPre = atof(xValuePre);
+    float yValuefPre = atof(yValuePre);
+    const float xAngleThr = 5.0;
+    const float yAngleThr = 5.0;
+
+    if(abs(xValuefPre) < 0.0001)
+        property_set("dev.angle.x.pre", xValueCur);
+    if(abs(yValuefPre) < 0.0001)
+        property_set("dev.angle.y.pre", yValueCur);
+
+    if( hw->getDisplayType()==2) {
+        //ALOGD("abs x is %f, abs y is %f", xValuefCur-xValuefPre, yValuefCur-yValuefPre);
+        //hw->setYRotatef(atof(yValue));
+        if(abs(xValuefCur-xValuefPre) > xAngleThr) {
+            hw->setXRotatef(-xValuefCur);
+            property_set("dev.angle.x.pre", xValueCur);
+        } else
+            hw->setXRotatef(-xValuefPre);
+
+        if(abs(yValuefCur-yValuefPre) > yAngleThr) {
+            hw->setZRotatef(yValuefCur);
+            property_set("dev.angle.y.pre", yValueCur);
+        } else
+            hw->setZRotatef(yValuefPre);
+    }
+
     if (cur != end) {
         // we're using h/w composer
         for (size_t i=0 ; i<count && cur!=end ; ++i, ++cur) {
@@ -1637,6 +1678,9 @@ void SurfaceFlinger::doComposeSurfaces(const sp<const DisplayDevice>& hw, const 
                     tr.transform(layer->visibleRegion)));
             if (!clip.isEmpty()) {
                 layer->draw(hw, clip);
+                hw->setXRotatef(0);
+                //hw->setYRotatef(0);
+                hw->setZRotatef(0);
             }
         }
     }

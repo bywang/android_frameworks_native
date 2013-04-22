@@ -362,9 +362,9 @@ private:
     void setUpHWComposer();
     void doComposition();
     void doDebugFlashRegions();
-    void doDisplayComposition(const sp<const DisplayDevice>& hw,
+    void doDisplayComposition(const sp<DisplayDevice>& hw,
             const Region& dirtyRegion);
-    void doComposeSurfaces(const sp<const DisplayDevice>& hw,
+    void doComposeSurfaces(const sp<DisplayDevice>& hw,
             const Region& dirty);
 
     void postFramebuffer();
